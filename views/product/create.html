@@ -43,27 +43,41 @@
         </div>
     </nav>
     <!--End of Navbar--> 
-      
+
     <div class="container mt-3">
         <div class="row d-flex justify-content-center">
             <div class="col-4">
-                <h2>Edit Category</h2>
+                <h2>Add Products</h2>
                 <hr />
   
-                <form action="/categories/edit" method="POST">
-                    <input type="hidden" name="id" value="{{ .category.Id }}">
+                <form action="/products/add" method="POST">
                     <div class="mb-3">
                         <label class="form-label">Name</label>
-                        <input type="text" class="form-control" name="name" value="{{ .category.Name }}" autocomplete="off"/>
+                        <input type="text" class="form-control" name="name" autocomplete="off"/>
+                    </div>
+                    <div class="mb-3">
+                        <select class="form-select" name="category_id">
+                        {{range .categories}}
+                        <option value="{{ .Id}}">{{.Name}}</option>
+                        {{end}}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Quantity</label>
+                        <input type="number" class="form-control" name="quantity" autocomplete="off"/>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea class="form-control" name="description" rows="3"></textarea>
                     </div>
                     <div class="float-end">
-                        <a href="/categories" class="btn btn-secondary">Back</a>
+                        <a href="/products" class="btn btn-secondary">Back</a>
                         <button type="submit" class="btn btn-primary">Save</button>
                     </div>
                 </form>
             </div>
         </div>
     </div>
-      
+
     </body>
 </html>

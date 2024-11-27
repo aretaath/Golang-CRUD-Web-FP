@@ -45,25 +45,33 @@
     <!--End of Navbar--> 
       
     <div class="container mt-3">
-        <div class="row d-flex justify-content-center">
-            <div class="col-4">
-                <h2>Edit Category</h2>
-                <hr />
-  
-                <form action="/categories/edit" method="POST">
-                    <input type="hidden" name="id" value="{{ .category.Id }}">
-                    <div class="mb-3">
-                        <label class="form-label">Name</label>
-                        <input type="text" class="form-control" name="name" value="{{ .category.Name }}" autocomplete="off"/>
-                    </div>
-                    <div class="float-end">
-                        <a href="/categories" class="btn btn-secondary">Back</a>
-                        <button type="submit" class="btn btn-primary">Save</button>
-                    </div>
-                </form>
-            </div>
-        </div>
+        <h2>List Products</h2>
+        <hr />
+        <a href="/products/add" class="btn btn-primary">Add Product</a>
+        <table class="table table-bordered mt-2 text-center">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Category</th>
+                    <th>Quantity</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {{range .products}}
+                <tr>
+                <td>{{.Name}}</td>
+                <td>{{.Category.Name}}</td>
+                <td>{{.Quantity}}</td>
+                <td>
+                    <a href="/products/detail?id={{.Id}}" class="btn btn-sm btn-info text-light">Detail</a>
+                    <a href="/products/edit?id={{.Id}}" class="btn btn-sm btn-warning text-light">Edit</a>
+                    <a href="/products/delete?id={{.Id}}" onclick="return confirm('Are you sure want to delete this product ?')" class="btn btn-sm btn-danger">Delete</a>
+                </td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
     </div>
-      
     </body>
 </html>
