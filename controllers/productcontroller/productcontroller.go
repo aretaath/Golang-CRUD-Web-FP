@@ -4,6 +4,7 @@ import (
 	"go-web/entities"
 	"go-web/models/categorymodel"
 	"go-web/models/productmodel"
+	"go-web/models/usermodel"
 	"net/http"
 	"strconv"
 	"text/template"
@@ -32,8 +33,10 @@ func Add(w http.ResponseWriter, r *http.Request) {
 		}
 
 		categories := categorymodel.GetAll()
+		users := usermodel.GetAll()
 		data := map[string]any{
 			"categories": categories,
+			"users":      users,
 		}
 
 		temp.Execute(w, data)
@@ -47,6 +50,11 @@ func Add(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 
+		userId, err := strconv.Atoi(r.FormValue("user_id"))
+		if err != nil {
+			panic(err)
+		}
+
 		quantity, err := strconv.Atoi(r.FormValue("quantity"))
 		if err != nil {
 			panic(err)
@@ -54,6 +62,7 @@ func Add(w http.ResponseWriter, r *http.Request) {
 
 		product.Name = r.FormValue("name")
 		product.Category.Id = uint(categoryId)
+		product.User.Id = uint(userId)
 		product.Quantity = int64(quantity)
 		product.Description = r.FormValue("description")
 		product.CreatedAt = time.Now()
