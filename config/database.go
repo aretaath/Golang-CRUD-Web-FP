@@ -10,11 +10,15 @@ import (
 var DB *sql.DB
 
 func ConnectDB() {
-	db, err := sql.Open("mysql", "root:mysql@/databasegolang?parseTime=True")
+	var err error
+	DB, err = sql.Open("mysql", "root:@/marine_shop?parseTime=True")
 	if err != nil {
-		panic(err)
+		log.Fatal("Database connection failed:", err)
+	}
+
+	if err = DB.Ping(); err != nil {
+		log.Fatal("Database is unreachable:", err)
 	}
 
 	log.Println("Database connected")
-	DB = db
 }

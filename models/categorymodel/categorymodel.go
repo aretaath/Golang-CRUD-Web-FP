@@ -3,6 +3,7 @@ package categorymodel
 import (
 	"go-web/config"
 	"go-web/entities"
+	"time"
 )
 
 func GetAll() []entities.Category {
@@ -28,6 +29,10 @@ func GetAll() []entities.Category {
 }
 
 func Create(category entities.Category) bool {
+
+	category.CreatedAt = time.Now()
+	category.UpdatedAt = time.Now()
+
 	result, err := config.DB.Exec(`
 		INSERT INTO categories (name, created_at, updated_at) 
 		VALUE (?, ?, ?)`,

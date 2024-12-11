@@ -7,34 +7,43 @@ import (
 	"go-web/controllers/productcontroller"
 	"go-web/controllers/usercontroller"
 	"log"
-	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
 	config.ConnectDB()
 
+	r := gin.Default()
+
 	// 1. Main Page
-	http.HandleFunc("/", maincontroller.Dashboard)
+	r.GET("/", maincontroller.Dashboard)
 
 	// 2. Categories
-	http.HandleFunc("/categories", categorycontroller.Index)
-	http.HandleFunc("/categories/add", categorycontroller.Add)
-	http.HandleFunc("/categories/edit", categorycontroller.Edit)
-	http.HandleFunc("/categories/delete", categorycontroller.Delete)
-	
+	r.GET("/categories", categorycontroller.Index)
+	r.GET("/categories/add", categorycontroller.AddGet)
+	r.POST("/categories/add", categorycontroller.AddPost)
+	r.GET("/categories/edit", categorycontroller.EditGet)
+	r.POST("/categories/edit", categorycontroller.EditPost)
+	r.GET("/categories/delete", categorycontroller.Delete)
+
 	// 2. Products
-	http.HandleFunc("/products", productcontroller.Index)
-	http.HandleFunc("/products/add", productcontroller.Add)
-	http.HandleFunc("/products/detail", productcontroller.Detail)
-	http.HandleFunc("/products/edit", productcontroller.Edit)
-	http.HandleFunc("/products/delete", productcontroller.Delete)
-	
+	r.GET("/products", productcontroller.Index)
+	r.GET("/products/add", productcontroller.AddGet)
+	r.POST("/products/add", productcontroller.AddPost)
+	r.GET("/products/detail", productcontroller.Detail)
+	r.GET("/products/edit", productcontroller.EditGet)
+	r.POST("/products/edit", productcontroller.EditPost)
+	r.GET("/products/delete", productcontroller.Delete)
+
 	// 3. Users
-	http.HandleFunc("/users", usercontroller.Index)
-	http.HandleFunc("/users/add", usercontroller.Add)
-	http.HandleFunc("/users/edit", usercontroller.Edit)
-	http.HandleFunc("/users/delete", usercontroller.Delete)
+	r.GET("/users", usercontroller.Index)
+	r.GET("/users/add", usercontroller.AddGet)
+	r.POST("/users/add", usercontroller.AddPost)
+	r.GET("/users/edit", usercontroller.EditGet)
+	r.POST("/users/edit", usercontroller.EditPost)
+	r.GET("/users/delete", usercontroller.Delete)
 
 	log.Println("Server running on port 8080")
-	http.ListenAndServe(":8080", nil)
+	r.Run(":8080")
 }

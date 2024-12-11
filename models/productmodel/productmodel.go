@@ -3,6 +3,7 @@ package productmodel
 import (
 	"go-web/config"
 	"go-web/entities"
+	"time"
 )
 
 func Getall() []entities.Product {
@@ -15,9 +16,10 @@ func Getall() []entities.Product {
 			products.quantity, 
 			products.description, 
 			products.created_at, 
-			products.updated_at FROM products
+			products.updated_at 
+		FROM products
 		JOIN categories ON products.category_id = categories.id
-		JOIN users ON products.users_id = users.id
+		JOIN users ON products.user_id = users.id  -- Corrected here
 	`)
 
 	if err != nil {
@@ -34,7 +36,7 @@ func Getall() []entities.Product {
 			&product.Id,
 			&product.Name,
 			&product.Category.Name,
-			&product.User.Name,
+			&product.User.Name, // Ensure User is populated
 			&product.Quantity,
 			&product.Description,
 			&product.CreatedAt,
@@ -50,13 +52,17 @@ func Getall() []entities.Product {
 }
 
 func Create(product entities.Product) bool {
+
+	product.CreatedAt = time.Now()
+	product.UpdatedAt = time.Now()
+
 	result, err := config.DB.Exec(`
 		INSERT INTO products(
-			name, category_id, users_id, quantity, description, created_at, updated_at
+			name, category_id, user_id, quantity, description, created_at, updated_at  -- Corrected here
 		) VALUES (?, ?, ?, ?, ?, ?, ?)`,
 		product.Name,
 		product.Category.Id,
-		product.User.Id,
+		product.User.Id, // Corrected here
 		product.Quantity,
 		product.Description,
 		product.CreatedAt,
@@ -81,11 +87,14 @@ func Detail(id int) entities.Product {
 			products.id, 
 			products.name, 
 			categories.name as category_name,
+			users.name as user_name,
 			products.quantity, 
 			products.description, 
 			products.created_at, 
-			products.updated_at FROM products
+			products.updated_at 
+		FROM products
 		JOIN categories ON products.category_id = categories.id
+		JOIN users ON products.user_id = users.id
 		WHERE products.id = ?
 	`, id)
 
@@ -95,6 +104,7 @@ func Detail(id int) entities.Product {
 		&product.Id,
 		&product.Name,
 		&product.Category.Name,
+		&product.User.Name,
 		&product.Quantity,
 		&product.Description,
 		&product.CreatedAt,
@@ -108,33 +118,35 @@ func Detail(id int) entities.Product {
 	return product
 }
 
-func Update(id int, product entities.Product) bool {
+func Update(id int, product entities.Product) (bool, error) {
 	query, err := config.DB.Exec(`
 		UPDATE products SET 
 			name = ?, 
 			category_id = ?,
+			user_id = ?,
 			quantity = ?,
 			description = ?,
 			updated_at = ?
 		WHERE id = ?`,
 		product.Name,
 		product.Category.Id,
+		product.User.Id,
 		product.Quantity,
 		product.Description,
-		product.UpdatedAt,
+		time.Now(),
 		id,
 	)
 
 	if err != nil {
-		panic(err)
+		return false, err
 	}
 
 	result, err := query.RowsAffected()
 	if err != nil {
-		panic(err)
+		return false, err
 	}
 
-	return result > 0
+	return result > 0, nil
 }
 
 func Delete(id int) error {

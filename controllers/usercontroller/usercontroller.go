@@ -7,9 +7,11 @@ import (
 	"strconv"
 	"text/template"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
-func Index(w http.ResponseWriter, r *http.Request) {
+func Index(c *gin.Context) {
 	users := usermodel.GetAll()
 	data := map[string]any{
 		"users": users,
@@ -17,93 +19,102 @@ func Index(w http.ResponseWriter, r *http.Request) {
 
 	temp, err := template.ParseFiles("views/user/index.html")
 	if err != nil {
-		panic(err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
-	temp.Execute(w, data)
-}
-
-func Add(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "GET" {
-		temp, err := template.ParseFiles("views/user/create.html")
-		if err != nil {
-			panic(err)
-		}
-
-		temp.Execute(w, nil)
-	}
-
-	if r.Method == "POST" {
-		var user entities.User
-
-		user.Name = r.FormValue("name")
-		user.CreatedAt = time.Now()
-		user.UpdatedAt = time.Now()
-
-		ok := usermodel.Create(user)
-		if !ok {
-			temp, _ := template.ParseFiles("views/user/create.html")
-			temp.Execute(w, nil)
-		}
-
-		http.Redirect(w, r, "/users", http.StatusSeeOther)
-	}
-
-}
-
-func Edit(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "GET" {
-		temp, err := template.ParseFiles("views/user/edit.html")
-		if err != nil {
-			panic(err)
-		}
-
-		idString := r.URL.Query().Get("id")
-		id, err := strconv.Atoi(idString)
-		if err != nil {
-			panic(err)
-		}
-
-		user := usermodel.Edit(id)
-		data := map[string]any{
-			"user": user,
-		}
-
-		temp.Execute(w, data)
-	}
-
-	if r.Method == "POST" {
-		var user entities.User
-
-		idString := r.FormValue("id")
-		id, err := strconv.Atoi(idString)
-		if err != nil {
-			panic(err)
-		}
-
-		user.Name = r.FormValue("name")
-		user.UpdatedAt = time.Now()
-
-		if ok := usermodel.Update(id, user); !ok {
-			http.Redirect(w, r, r.Header.Get("Referer"), http.StatusTemporaryRedirect)
-			return
-		}
-
-		http.Redirect(w, r, "/users", http.StatusSeeOther)
+	// Render the template
+	if err := temp.Execute(c.Writer, data); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
 }
 
-func Delete(w http.ResponseWriter, r *http.Request) {
-	idString := r.URL.Query().Get("id")
+func AddGet(c *gin.Context) {
+	temp, err := template.ParseFiles("views/user/create.html")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Render the template
+	if err := temp.Execute(c.Writer, nil); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	}
+}
+
+func AddPost(c *gin.Context) {
+	var user entities.User
+
+	user.Name = c.PostForm("name")
+
+	ok := usermodel.Create(user)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menambahkan user"})
+		return
+	}
+
+	c.Redirect(http.StatusSeeOther, "/users")
+}
+
+func EditGet(c *gin.Context) {
+	idString := c.Query("id")
+	id, err := strconv.Atoi(idString)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	user := usermodel.Edit(id)
+	data := map[string]any{
+		"user": user,
+	}
+
+	temp, err := template.ParseFiles("views/user/edit.html")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Render the template
+	if err := temp.Execute(c.Writer, data); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	}
+}
+
+func EditPost(c *gin.Context) {
+	var user entities.User
+
+	idString := c.PostForm("id")
+	id, err := strconv.Atoi(idString)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	user.Name = c.PostForm("name")
+	user.UpdatedAt = time.Now()
+
+	if ok := usermodel.Update(id, user); !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal mengupdate user"})
+		return
+	}
+
+	c.Redirect(http.StatusSeeOther, "/users")
+}
+
+func Delete(c *gin.Context) {
+	idString := c.Query("id")
 
 	id, err := strconv.Atoi(idString)
 	if err != nil {
-		panic(err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
 	if err := usermodel.Delete(id); err != nil {
-		panic(err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
-	http.Redirect(w, r, "/users", http.StatusSeeOther)
+	c.Redirect(http.StatusSeeOther, "/users")
 }

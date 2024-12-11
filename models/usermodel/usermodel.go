@@ -3,6 +3,7 @@ package usermodel
 import (
 	"go-web/config"
 	"go-web/entities"
+	"time"
 )
 
 func GetAll() []entities.User {
@@ -28,6 +29,10 @@ func GetAll() []entities.User {
 }
 
 func Create(user entities.User) bool {
+
+	user.CreatedAt = time.Now()
+	user.UpdatedAt = time.Now()
+
 	result, err := config.DB.Exec(`
 		INSERT INTO users (name, created_at, updated_at) 
 		VALUE (?, ?, ?)`,

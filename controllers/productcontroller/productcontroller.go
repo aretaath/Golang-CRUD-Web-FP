@@ -9,9 +9,11 @@ import (
 	"strconv"
 	"text/template"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
-func Index(w http.ResponseWriter, r *http.Request) {
+func Index(c *gin.Context) {
 	products := productmodel.Getall()
 	data := map[string]any{
 		"products": products,
@@ -19,70 +21,77 @@ func Index(w http.ResponseWriter, r *http.Request) {
 
 	temp, err := template.ParseFiles("views/product/index.html")
 	if err != nil {
-		panic(err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
-	temp.Execute(w, data)
-}
-
-func Add(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "GET" {
-		temp, err := template.ParseFiles("views/product/create.html")
-		if err != nil {
-			panic(err)
-		}
-
-		categories := categorymodel.GetAll()
-		users := usermodel.GetAll()
-		data := map[string]any{
-			"categories": categories,
-			"users":      users,
-		}
-
-		temp.Execute(w, data)
-	}
-
-	if r.Method == "POST" {
-		var product entities.Product
-
-		categoryId, err := strconv.Atoi(r.FormValue("category_id"))
-		if err != nil {
-			panic(err)
-		}
-
-		userId, err := strconv.Atoi(r.FormValue("user_id"))
-		if err != nil {
-			panic(err)
-		}
-
-		quantity, err := strconv.Atoi(r.FormValue("quantity"))
-		if err != nil {
-			panic(err)
-		}
-
-		product.Name = r.FormValue("name")
-		product.Category.Id = uint(categoryId)
-		product.User.Id = uint(userId)
-		product.Quantity = int64(quantity)
-		product.Description = r.FormValue("description")
-		product.CreatedAt = time.Now()
-		product.UpdatedAt = time.Now()
-
-		if ok := productmodel.Create(product); !ok {
-			http.Redirect(w, r, r.Header.Get("Referer"), http.StatusTemporaryRedirect)
-			return
-		}
-
-		http.Redirect(w, r, "/products", http.StatusSeeOther)
+	if err := temp.Execute(c.Writer, data); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
 }
 
-func Detail(w http.ResponseWriter, r *http.Request) {
-	idString := r.URL.Query().Get("id")
+func AddGet(c *gin.Context) {
+	categories := categorymodel.GetAll()
+	users := usermodel.GetAll()
+	data := map[string]any{
+		"categories": categories,
+		"users":      users,
+	}
+
+	temp, err := template.ParseFiles("views/product/create.html")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Render the template
+	if err := temp.Execute(c.Writer, data); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	}
+}
+
+func AddPost(c *gin.Context) {
+	var product entities.Product
+
+	categoryId, err := strconv.Atoi(c.PostForm("category_id"))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	userId, err := strconv.Atoi(c.PostForm("user_id"))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	quantity, err := strconv.Atoi(c.PostForm("quantity"))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	product.Name = c.PostForm("name")
+	product.Category.Id = uint(categoryId)
+	product.User.Id = uint(userId)
+	product.Quantity = int64(quantity)
+	product.Description = c.PostForm("description")
+
+	if ok := productmodel.Create(product); !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Gagal menambahkan produk"})
+		return
+	}
+
+	c.Redirect(http.StatusSeeOther, "/products")
+}
+
+func Detail(c *gin.Context) {
+	idString := c.Query("id")
 
 	id, err := strconv.Atoi(idString)
 	if err != nil {
-		panic(err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
 	product := productmodel.Detail(id)
@@ -92,81 +101,93 @@ func Detail(w http.ResponseWriter, r *http.Request) {
 
 	temp, err := template.ParseFiles("views/product/detail.html")
 	if err != nil {
-		panic(err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
-	temp.Execute(w, data)
-}
-
-func Edit(w http.ResponseWriter, r *http.Request) {
-	if r.Method == "GET" {
-		temp, err := template.ParseFiles("views/product/edit.html")
-		if err != nil {
-			panic(err)
-		}
-
-		idString := r.URL.Query().Get("id")
-		id, err := strconv.Atoi(idString)
-		if err != nil {
-			panic(err)
-		}
-
-		product := productmodel.Detail(id)
-		categories := categorymodel.GetAll()
-
-		data := map[string]any{
-			"product":    product,
-			"categories": categories,
-		}
-
-		temp.Execute(w, data)
-	}
-
-	if r.Method == "POST" {
-		var product entities.Product
-
-		idString := r.FormValue("id")
-		id, err := strconv.Atoi(idString)
-		if err != nil {
-			panic(err)
-		}
-
-		categoryId, err := strconv.Atoi(r.FormValue("category_id"))
-		if err != nil {
-			panic(err)
-		}
-
-		quantity, err := strconv.Atoi(r.FormValue("quantity"))
-		if err != nil {
-			panic(err)
-		}
-
-		product.Name = r.FormValue("name")
-		product.Category.Id = uint(categoryId)
-		product.Quantity = int64(quantity)
-		product.Description = r.FormValue("description")
-		product.UpdatedAt = time.Now()
-
-		if ok := productmodel.Update(id, product); !ok {
-			http.Redirect(w, r, r.Header.Get("Referer"), http.StatusTemporaryRedirect)
-			return
-		}
-
-		http.Redirect(w, r, "/products", http.StatusSeeOther)
+	// Render the template
+	if err := temp.Execute(c.Writer, data); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	}
 }
 
-func Delete(w http.ResponseWriter, r *http.Request) {
-	idString := r.URL.Query().Get("id")
+func EditGet(c *gin.Context) {
+	idString := c.Query("id")
+	id, err := strconv.Atoi(idString)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	product := productmodel.Detail(id)
+	categories := categorymodel.GetAll()
+
+	data := map[string]any{
+		"product":    product,
+		"categories": categories,
+	}
+
+	temp, err := template.ParseFiles("views/product/edit.html")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	// Render the template
+	if err := temp.Execute(c.Writer, data); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	}
+}
+
+func EditPost(c *gin.Context) {
+	var product entities.Product
+
+	idString := c.PostForm("id")
+	id, err := strconv.Atoi(idString)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	categoryId, err := strconv.Atoi(c.PostForm("category_id"))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	quantity, err := strconv.Atoi(c.PostForm("quantity"))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	product.Name = c.PostForm("name")
+	product.Category.Id = uint(categoryId)
+	product.Quantity = int64(quantity)
+	product.Description = c.PostForm("description")
+	product.UpdatedAt = time.Now()
+
+	if ok, err := productmodel.Update(id, product); err != nil || !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Poduct Update Fail: " + err.Error()})
+		return
+	}
+
+	c.Redirect(http.StatusSeeOther, "/products")
+}
+
+func Delete(c *gin.Context) {
+	idString := c.Query("id")
 
 	id, err := strconv.Atoi(idString)
 	if err != nil {
-		panic(err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
 	if err := productmodel.Delete(id); err != nil {
-		panic(err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
 	}
 
-	http.Redirect(w, r, "/products", http.StatusSeeOther)
+	c.Redirect(http.StatusSeeOther, "/products")
 }
