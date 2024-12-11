@@ -16,8 +16,7 @@ Features
 Products (with category and user relationships)
 Categories
 Users
-
-## Web-based interface using HTML templates
+Web-based interface using HTML templates
 MySQL database integration
 Clean MVC architecture
 
